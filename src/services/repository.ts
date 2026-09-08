@@ -1,3 +1,4 @@
+import { createId } from '../utils/id';
 import { repository as local, verifyDrawer as markDrawer, type Database, type Item } from '../data';
 import { supabase } from './supabase';
 import { areaFromRow,eventFromRow,itemFromRow,itemToRow,locationFromRow,migrationData,profileFromRow,slug,type Row } from './mapping';
@@ -12,7 +13,7 @@ export class LocalStorageInventoryRepository implements InventoryRepository {
   for(const i of next.items){const old=before.items.find(x=>x.id===i.id);if(!old||changed(old,i))events.push(this.event(i,old?i.quantity!==old.quantity?'quantity_changed':'item_updated':'item_created',old?.quantity??null));}
   local.save({...next,events:events.slice(-500)} as LocalWithHistory);
  }
- private event(i:Item,type:string,before:number|null):InventoryEvent{return {id:crypto.randomUUID(),itemId:i.id,itemName:i.name,areaId:i.areaId,userId:'local-demo',eventType:type,quantityBefore:before,quantityAfter:i.quantity,changeAmount:before===null?null:i.quantity-before,notes:'',createdAt:new Date().toISOString()};}
+ private event(i:Item,type:string,before:number|null):InventoryEvent{return {id:createId(),itemId:i.id,itemName:i.name,areaId:i.areaId,userId:'local-demo',eventType:type,quantityBefore:before,quantityAfter:i.quantity,changeAmount:before===null?null:i.quantity-before,notes:'',createdAt:new Date().toISOString()};}
  async quantity(item:Item,change:{delta?:number;quantity?:number;verify?:boolean}){
   const db=local.load();const current=db.items.find(i=>i.id===item.id);if(!current)throw new Error('This item no longer exists.');
   if(change.delta===undefined&&current.updatedAt!==item.updatedAt)throw new Error('This item changed. Review the latest count and try again.');
@@ -60,7 +61,7 @@ export class SupabaseInventoryRepository implements InventoryRepository {
  async verifyDrawer(db:Database,id:string){const {error}=await this.client().rpc('verify_inventory_drawer',{p_location_id:id,p_expected:db.items.filter(i=>i.locationId===id).map(i=>({id:i.id,updated_at:i.updatedAt}))});if(error)throw error;}
  subscribe(onChange:()=>void,onStatus:(message:string)=>void){
   let timer:ReturnType<typeof setTimeout>|undefined;const notify=()=>{clearTimeout(timer);timer=setTimeout(onChange,150);};
-  const channel=this.client().channel(`inventory-${crypto.randomUUID()}`);
+  const channel=this.client().channel(`inventory-${createId()}`);
   for(const table of ['inventory_items','locations','inventory_events','profiles','areas'])channel.on('postgres_changes',{event:'*',schema:'public',table},notify);
   channel.subscribe(status=>{onStatus(status==='SUBSCRIBED'?'':'Live updates are reconnecting. Data also refreshes every 30 seconds.');if(status==='SUBSCRIBED')notify();});
   const fallback=setInterval(onChange,30000);const focus=()=>onChange();window.addEventListener('focus',focus);

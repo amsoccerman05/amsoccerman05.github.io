@@ -1,3 +1,4 @@
+import { createId } from './utils/id';
 import { useRef, useState } from 'react';
 import { ArrowRight, ArrowUpRight, Check, MapPin, Minus, Plus, Search } from 'lucide-react';
 import { inLocation, possibleDuplicates, itemTypes, ownerships, needsVerification, locationKinds, locationLabel, locationPath, locationTrail, missingTools, status, type Database, type Item, type Location } from './data';
@@ -78,7 +79,7 @@ export function LocationDetail({ db, location, go, table, adjust, correct, verif
 export function AddLocation({ db, save }: { db: Database; save:(location:Location)=>Promise<boolean> }) {
  const [parentId,setParentId]=useState('');
  return <form className="form-grid" onSubmit={async e=>{e.preventDefault();const form=e.currentTarget;const f=new FormData(form);const name=String(f.get('name')).trim();if(!name)return;const parent=db.locations.find(l=>l.id===parentId);const kind=String(f.get('kind')) as Location['kind'];
-  if(await save({id:crypto.randomUUID(),name,parentId:parentId||null,kind,description:String(f.get('description')).trim(),room:parent?.room||String(f.get('room')).trim(),storage:parent?locationLabel(parent):name,bin:name})){form.reset();setParentId('');}
+  if(await save({id:createId(),name,parentId:parentId||null,kind,description:String(f.get('description')).trim(),room:parent?.room||String(f.get('room')).trim(),storage:parent?locationLabel(parent):name,bin:name})){form.reset();setParentId('');}
  }}>
   <label>Parent location<select value={parentId} onChange={e=>setParentId(e.target.value)}><option value="">Top-level location</option>{db.locations.filter(l=>l.kind!=='Drawer'&&l.kind!=='Bin').map(l=><option key={l.id} value={l.id}>{locationPath(db.locations,l.id)}</option>)}</select></label>
   <label>Location type<select name="kind">{locationKinds.map(kind=><option key={kind}>{kind}</option>)}</select></label>

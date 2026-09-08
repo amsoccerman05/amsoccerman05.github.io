@@ -1,3 +1,4 @@
+import { createId } from './utils/id';
 export interface Area { id: string; name: string; lead: string; slug?: string }
 export const locationKinds = ['Storage', 'Side', 'Shelf', 'Bin', 'Drawer'] as const;
 export interface Location { id: string; room: string; storage: string; bin: string; name?: string; parentId?: string | null; kind?: typeof locationKinds[number]; description?: string }
@@ -18,7 +19,7 @@ export const filterRestock = (items: Item[], areaId = '', state: OrderState | ''
 export interface Database { version: 1; items: Item[]; areas: Area[]; categories: string[]; locations: Location[] }
 export const status = (i: Item) => i.quantity === 0 ? 'OUT' : i.quantity <= i.minimum ? 'LOW' : 'GOOD';
 export const needsVerification = (i: Item) => !i.lastVerified || Date.now() - new Date(i.lastVerified).getTime() > 90 * 86400000;
-export const blankItem = (): Item => ({id: crypto.randomUUID(), name:'',areaId:'power',category:'',quantity:0,unit:'each',minimum:0,target:0,locationId:'',manufacturer:'',partNumber:'',vendor:'',url:'',cost:0,notes:'',updatedAt:new Date().toISOString(),lastVerified:'',updatedBy:'',orderStatus:'Needs Order',trackingMode:'quantity',itemType:'Part',ownership:'FRC 4418',expectedQuantity:null,slot:''});
+export const blankItem = (): Item => ({id: createId(), name:'',areaId:'power',category:'',quantity:0,unit:'each',minimum:0,target:0,locationId:'',manufacturer:'',partNumber:'',vendor:'',url:'',cost:0,notes:'',updatedAt:new Date().toISOString(),lastVerified:'',updatedBy:'',orderStatus:'Needs Order',trackingMode:'quantity',itemType:'Part',ownership:'FRC 4418',expectedQuantity:null,slot:''});
 export function demo(): Database {
  const names = ['Fabrication','Power','Software','Operations','CAD','Strategy','Finance','Business','Communications','General / Admin'];
  const areas = names.map(name => ({id:name.toLowerCase().replace(/\W+/g,'-'),name,lead:''}));

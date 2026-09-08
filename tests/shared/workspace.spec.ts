@@ -1,4 +1,6 @@
 import { test,expect,type Page } from '@playwright/test';
+// Exercise the SDK and shared repository with the HTTP-limited Crypto API.
+test.beforeEach(async({page})=>{await page.addInitScript(()=>Object.defineProperty(crypto,'randomUUID',{value:undefined,configurable:true}));});
 const drawer='10000000-0000-4000-8000-000000000001';
 const tool='5/32" Allen wrench';
 async function signIn(page:Page,role:string){await page.goto('/');await page.getByLabel('Email',{exact:true}).fill(role+'@example.test');await page.getByLabel('Password',{exact:true}).fill('test-password');await page.getByRole('button',{name:'Sign In',exact:true}).click();await expect(page.getByRole('button',{name:'Inventory',exact:true})).toBeVisible();}
