@@ -1,0 +1,21 @@
+import { useEffect,useState } from 'react';
+import { repository as local, type Database } from '../data';
+import type { InventoryRepository,InventoryEvent,UserProfile } from './types';
+import { userRoles } from './types';
+import { friendlyError } from './supabase';
+export function Activity({repository,profiles,itemId,areaId,revision}:{repository:InventoryRepository;profiles:UserProfile[];itemId?:string;areaId?:string;revision?:string}){
+ const [events,setEvents]=useState<InventoryEvent[]>([]),[error,setError]=useState('');
+ useEffect(()=>{let active=true;void repository.history(itemId,areaId).then(data=>{if(active){setEvents(data);setError('');}}).catch(e=>{if(active)setError(friendlyError(e));});return()=>{active=false;};},[repository,itemId,areaId,revision]);
+ return <section className="activity"><h2>Recent activity</h2>{error&&<p role="status">{error}</p>}{!events.length&&!error&&<small>No recorded changes yet.</small>}{events.slice(0,8).map(e=><div key={e.id}><p><b>{profiles.find(p=>p.id===e.userId)?.displayName||'Team member'}</b> {e.eventType==='quantity_changed'?`changed ${e.itemName} from ${e.quantityBefore} → ${e.quantityAfter}`:e.eventType==='item_verified'||e.eventType==='drawer_verified'?`verified ${e.itemName}`:`${e.eventType.replaceAll('_',' ')} · ${e.itemName}`}</p><small>{new Date(e.createdAt).toLocaleString()}</small></div>)}</section>;
+}
+export function UsersPanel({profiles,areas,save}:{profiles:UserProfile[];areas:Database['areas'];save:(p:UserProfile)=>Promise<boolean>}){
+ return <section className="panel settings-panel"><h2>Users</h2><p>Invite accounts through Supabase Auth. Manage existing team profiles here.</p>{profiles.map(p=><ProfileForm key={`${p.id}-${p.updatedAt}`} profile={p} areas={areas} save={save}/>)}</section>;
+}
+function ProfileForm({profile,areas,save}:{profile:UserProfile;areas:Database['areas'];save:(p:UserProfile)=>Promise<boolean>}){
+ const [p,setP]=useState(profile),[busy,setBusy]=useState(false);
+ return <form className="profile-form" onSubmit={async e=>{e.preventDefault();setBusy(true);await save(p);setBusy(false);}}><small>{p.email}</small><div className="form-grid"><label>Display name<input value={p.displayName} onChange={e=>setP({...p,displayName:e.target.value})}/></label><label>Role<select value={p.role} onChange={e=>setP({...p,role:e.target.value as UserProfile['role']})}>{userRoles.map(r=><option key={r}>{r}</option>)}</select></label><label>Assigned area<select value={p.primaryAreaId||''} onChange={e=>setP({...p,primaryAreaId:e.target.value||null})}><option value="">Unassigned</option>{areas.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></label><label className="checkbox-label"><input type="checkbox" checked={p.active} onChange={e=>setP({...p,active:e.target.checked})}/>Active</label></div><button className="secondary" disabled={busy}>Save profile</button></form>;
+}
+export function MigrationPanel({migrate}:{migrate:(db:Database)=>Promise<boolean>}){
+ const [preview,setPreview]=useState<Database|null>(null),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
+ return <section className="panel settings-panel"><h2>Migrate local V0 data to Supabase</h2><p>Reads this browser’s local inventory. Existing shared IDs are preserved; only missing records are added.</p><button className="secondary" disabled={busy} onClick={()=>{try{const db=local.existing();setPreview(db);setMessage(db?'':'No saved V0 data was found in this browser.');}catch(e){setMessage(friendlyError(e));}}}>Preview local data</button>{preview&&<div className="migration-preview"><p>{preview.items.length} inventory items · {preview.locations.length} locations · {preview.areas.length} areas</p><button className="primary" disabled={busy} onClick={async()=>{if(!confirm(`Migrate ${preview.items.length} local inventory items, ${preview.locations.length} locations and ${preview.areas.length} areas to the shared workspace? Existing shared records will be kept.`))return;setBusy(true);const ok=await migrate(preview);if(ok){setMessage('Migration complete. Local V0 data has been kept as a backup.');setPreview(null);}setBusy(false);}}>Confirm migration</button></div>}{message&&<p role="status">{message}</p>}</section>;
+}
