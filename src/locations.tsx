@@ -1,3 +1,4 @@
+import {Photo} from './logistics';
 import {atLocation,balanceAt,locationItems,incomplete,unaccounted,title} from './services/logistics-model';
 import { createId } from './utils/id';
 import { useRef, useState } from 'react';
@@ -17,7 +18,7 @@ export function LocationCards({ db, locations, go }: { db: Database; locations: 
   const items=db.items.filter(i=>inLocation(db.locations,i.locationId,l.id)||!!db.logistics?.balances.some(b=>b.itemId===i.id&&b.quantity>0&&inLocation(db.locations,b.locationId,l.id))).map(i=>db.logistics?atLocation(db,i,i.locationId):i);
   const missing=items.filter(i=>(!db.logistics||inLocation(db.locations,i.homeLocationId||i.locationId,l.id))&&missingTools(i)).length;
   return <button className="panel location-card" key={l.id} onClick={()=>go(`location/${l.id}`)}>
-   <div><span className="area-icon tone-1"><MapPin size={21}/></span><ArrowUpRight size={18}/></div>
+   {db.logistics?.media.some(p=>p.entityType==='locations'&&p.entityId===l.id)?<Photo location compact={!!l.parentId} alt={l.name||l.storage} photo={db.logistics.media.find(p=>p.entityType==='locations'&&p.entityId===l.id)}/>:<div><span className="area-icon tone-1"><MapPin size={21}/></span><ArrowUpRight size={18}/></div>}
    <small>{l.parentId?locationPath(db.locations,l.parentId):l.room}</small>
    <h2>{l.name?locationLabel(l):l.storage}</h2>
    {l.description&&<small className="location-description">{l.description}</small>}

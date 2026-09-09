@@ -17,7 +17,7 @@ test('drawer distinguishes assigned elsewhere from unaccounted',async({page})=>{
  await page.goto('/#location/project');await page.getByRole('button',{name:'Remove one 5/32" Allen Wrench',exact:true}).click();await expect(page.locator('.quantity-toast')).toContainText('0 each');await page.goto('/#location/home');row=page.locator('.audit-row').filter({has:page.getByRole('button',{name:'5/32" Allen Wrench',exact:true})});await expect(row).toContainText('1 unaccounted');await expect(row).toContainText('Missing tools');
 });
 test('school drill trip packs, splits internal locations, returns and closes on mobile',async({page})=>{
- await page.setViewportSize({width:390,height:844});await page.goto('/#travel');await page.getByLabel('Trip name',{exact:true}).fill('2026 Denver Regional');await page.getByRole('button',{name:'Create trip',exact:true}).click();await page.getByRole('button',{name:/2026 Denver Regional/}).click();await page.getByLabel('Trip status').selectOption('packing');
+ await page.setViewportSize({width:390,height:844});await page.goto('/#travel');await page.getByRole('button',{name:'New trip',exact:true}).first().click();await page.getByLabel('Trip name',{exact:true}).fill('2026 Denver Regional');await page.getByRole('button',{name:'Create trip',exact:true}).click();await page.getByRole('button',{name:/2026 Denver Regional/}).click();await page.getByLabel('Trip status').selectOption('packing');
  await page.getByLabel('Manifest item').selectOption('drill');await page.getByLabel('Approved quantity').fill('2');await page.getByRole('button',{name:'Approve for packing',exact:true}).click();await page.getByRole('button',{name:'Pack',exact:true}).click();await page.getByRole('button',{name:'Confirm pack',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
  await page.getByRole('button',{name:'Move within trip',exact:true}).click();await page.getByLabel('Allocation quantity').fill('1');await page.getByLabel('Allocation destination').selectOption({label:'2026 Denver Regional → Pit Toolbox B'});await page.getByRole('button',{name:'Confirm internal',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);await expect(page.locator('.manifest-row')).toHaveCount(2);
  await page.getByLabel('Trip status').selectOption('closed');await expect(page.getByRole('alert')).toContainText('Unresolved');await page.getByRole('button',{name:'Dismiss error'}).click();
@@ -28,4 +28,19 @@ test('school drill trip packs, splits internal locations, returns and closes on 
 test('accounting helper preserves a single item and exposes a loss',()=>{
  let db=localAction(initial(),'move',{itemId:'wrench',from:'home',to:'project',quantity:1});let item=db.items.find(i=>i.id==='wrench')!;expect(db.items).toHaveLength(3);expect(unaccounted(atLocation(db,item,'home'))).toBe(0);
  db=localAction(db,'adjust',{itemId:'wrench',from:'project',quantity:0,updatedAt:item.updatedAt});item=db.items.find(i=>i.id==='wrench')!;expect(unaccounted(atLocation(db,item,'home'))).toBe(1);expect(item.quantity).toBe(3);
+});
+
+test('creation dialogs and trip groups remain usable across screen sizes',async({page})=>{
+ for(const width of [1440,1280,768,390]){
+  await page.setViewportSize({width,height:900});await page.goto('/#travel');
+  await expect(page.getByRole('heading',{name:'No trips yet'})).toBeVisible();await expect(page.getByLabel('Trip name')).toHaveCount(0);
+  await page.getByRole('button',{name:'New trip',exact:true}).first().click();await expect(page.getByRole('dialog')).toBeVisible();await expect(page.getByLabel('Trip name')).toBeFocused();await page.screenshot({path:`test-results/new-trip-${width}.png`,fullPage:true});await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.goto('/#locations');await expect(page.getByLabel('Location name')).toHaveCount(0);await page.getByRole('button',{name:'Add location',exact:true}).click();await expect(page.getByLabel('Instructions')).toBeVisible();await page.screenshot({path:`test-results/new-location-${width}.png`,fullPage:true});await page.getByRole('button',{name:'Cancel',exact:true}).click();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+ }
+ await page.goto('/#travel');await page.getByRole('button',{name:'New trip',exact:true}).first().click();await page.getByLabel('Trip name').fill('2027 Denver Regional — competition equipment and school tools');await page.getByRole('button',{name:'Create trip',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);await expect(page.getByRole('heading',{name:'Upcoming trips'})).toBeVisible();await expect(page.getByRole('heading',{name:'Completed trips'})).toHaveCount(0);await page.screenshot({path:'test-results/travel-mobile.png',fullPage:true});
+ for(const name of ['Offseason demonstration — shared equipment','Pikes Peak Regional']){await page.getByRole('button',{name:'New trip',exact:true}).click();await page.getByLabel('Trip name').fill(name);await page.getByRole('button',{name:'Create trip',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);}
+ await page.getByRole('button',{name:/Pikes Peak Regional.*Open trip/}).click();await page.getByLabel('Trip status').selectOption('packing');await page.getByRole('button',{name:'All trips',exact:true}).click();await expect(page.locator('.travel-group').first()).toContainText('Active trips');
+ for(const width of [1440,1280,768,390]){await page.setViewportSize({width,height:900});expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);await page.screenshot({path:`test-results/travel-cards-${width}.png`,fullPage:true});}
+
 });
