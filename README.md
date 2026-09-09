@@ -1,6 +1,12 @@
-# FRC Team 4418 Inventory — V1
+# FRC Team 4418 Inventory
 
 React, TypeScript and Vite inventory for students and mentors, preserving the green/white Team 4418 interface, hierarchical storage and quick drawer audits. Supabase provides shared persistence, email/password authentication, database permissions and attributed history. Local demo mode remains available.
+
+## Photos, movement and travel upgrade
+
+The app now supports private item/location photos, multi-location balances, atomic transfers, and competition trips with approvals, packing, internal moves, returns and explicit resolutions. Existing layout, branding and V1 workflows remain in place.
+
+**Owner action:** apply only migrations **004** and **005**, in order, using [the upgrade guide](supabase/UPGRADE_LOGISTICS.md). The current V1 backend remains usable until setup is complete. No DNS, custom-domain or authentication changes are needed. The guide defines canonical quantities, permissions, Storage setup and live acceptance checks.
 
 ## Supabase setup
 
@@ -94,7 +100,7 @@ Item types are Part, Consumable, Raw Material, Tool and Asset. Ownership is Shar
 
 **Complete / Missing tools** describes physical completeness. **Low stock / Out of stock** describes supply health. Both can appear together, and a missing tool above minimum does not automatically need restocking. Open Toolbox A → TA-01 to see every directly assigned item and its current/expected count, slot and overall target. Correct a count with the buttons or by typing and pressing Enter or leaving the field. **Mark drawer verified** verifies all directly assigned items without changing expected/target counts or other drawers. Shared mode records each verification with its authenticated actor.
 
-Demo locations include Toolbox A — Mechanical / General (TA-01–TA-15), Toolbox B — Electrical / Specialty (TB-01–TB-15), and Storage Closet with CL-L/CL-R bins. Counts are illustrative, not a verified physical audit. Each inventory record currently has one aggregate quantity and exact location; multi-location balances for a single item are not implemented.
+Demo locations include Toolbox A — Mechanical / General (TA-01–TA-15), Toolbox B — Electrical / Specialty (TB-01–TB-15), and Storage Closet with CL-L/CL-R bins. Counts are illustrative, not a verified physical audit. Before migration 004, each record has one aggregate count/location. After the upgrade, balances track each location and the original location becomes its designated home. See the upgrade guide for quantity and audit semantics.
 
 ## GitHub Pages and future custom domain
 
@@ -110,6 +116,7 @@ npm run test:security
 npx playwright install chromium
 npm run test:e2e
 npm run test:shared
+npm run test:logistics
 ```
 
 No separate linter is configured. Build runs strict TypeScript checks. Browser tests can use an installed Chromium browser through `PLAYWRIGHT_CHROMIUM_EXECUTABLE`. `TEST_PRODUCTION=1 npm run test:e2e` tests the production demo build, including custom-domain root asset loading. The default browser suite explicitly uses demo mode regardless of local project settings.
@@ -120,7 +127,7 @@ After owner setup, invite a student, Fabrication lead and mentor and repeat the 
 
 ## V1 limitations
 
-- No QR codes, serialized asset tracking, tool checkout, full purchasing workflow, item photos, Onshape integration, invitation backend or advanced analytics.
+- No QR codes, serialized asset tracking, tool checkout, full purchasing workflow, Onshape integration, invitation backend or advanced analytics.
 - Order status remains a saved field/filter, not a purchasing workflow.
 - History shows a concise recent subset, with no analytics or audit export UI.
 - User invitations and initial privileged profile setup require the Supabase dashboard/owner SQL.

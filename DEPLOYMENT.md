@@ -55,4 +55,8 @@ If development uses `127.0.0.1`, add the two matching `http://127.0.0.1:5173/` v
 
 Sign in as a mentor and explicitly add toolbox demo data or migrate the existing local V0 inventory. Invite student/lead/readonly accounts and assign roles in Admin. On two devices, check a student's quantity decrement reaches the other device, is attributed in history, and appears as Missing tools in the drawer. Verify item/drawer audit timestamps, refresh session restoration, sign-out, and actual password-reset email delivery. Local contract tests cover these app paths, but cannot prove the remote project is configured until its schema and test accounts exist.
 
-No QR codes, serialized assets, checkout, full purchasing workflow, item photos, Onshape integration, invitation backend or advanced analytics are included in V1.
+No QR codes, serialized assets, checkout, full purchasing workflow, Onshape integration, invitation backend or advanced analytics are included in V1.
+
+## Enable photos, balances and trips
+
+After this frontend upgrade, follow [the owner upgrade guide](supabase/UPGRADE_LOGISTICS.md) to apply migrations 004 and 005. The existing app remains usable until then. No additional GitHub variables, DNS or Auth URL changes are required.

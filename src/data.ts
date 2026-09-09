@@ -1,10 +1,11 @@
+import type {Logistics, LocationClass} from './services/logistics-model';
 import { createId } from './utils/id';
 export interface Area { id: string; name: string; lead: string; slug?: string }
 export const locationKinds = ['Storage', 'Side', 'Shelf', 'Bin', 'Drawer'] as const;
-export interface Location { id: string; room: string; storage: string; bin: string; name?: string; parentId?: string | null; kind?: typeof locationKinds[number]; description?: string }
+export interface Location { classification?:LocationClass; areaId?:string; tripId?:string; active?:boolean; id: string; room: string; storage: string; bin: string; name?: string; parentId?: string | null; kind?: typeof locationKinds[number]; description?: string }
 export const itemTypes = ['Part', 'Consumable', 'Raw Material', 'Tool', 'Asset'] as const;
 export const ownerships = ['Shared / School', 'FRC 4418', 'BEST'] as const;
-export interface Item { id: string; name: string; areaId: string; category: string; quantity: number; unit: string; minimum: number; target: number; locationId: string; manufacturer: string; partNumber: string; vendor: string; url: string; cost: number; notes: string; updatedAt: string; lastVerified: string; updatedBy: string; orderStatus?: OrderState; trackingMode?: 'quantity' | 'individual'; itemType: typeof itemTypes[number]; ownership: typeof ownerships[number]; expectedQuantity: number | null; slot: string; lastVerifiedBy?:string; legacyUpdatedBy?:string }
+export interface Item { totalQuantity?:number; homeLocationId?:string; balanceLocationId?:string; assignedElsewhere?:number; id: string; name: string; areaId: string; category: string; quantity: number; unit: string; minimum: number; target: number; locationId: string; manufacturer: string; partNumber: string; vendor: string; url: string; cost: number; notes: string; updatedAt: string; lastVerified: string; updatedBy: string; orderStatus?: OrderState; trackingMode?: 'quantity' | 'individual'; itemType: typeof itemTypes[number]; ownership: typeof ownerships[number]; expectedQuantity: number | null; slot: string; lastVerifiedBy?:string; legacyUpdatedBy?:string }
 export const orderStates = ['Needs Order', 'Ordered', 'Received'] as const;
 export type OrderState = typeof orderStates[number];
 export const orderStatus = (item: Item): OrderState => item.orderStatus ?? 'Needs Order';
@@ -16,8 +17,8 @@ export function migrateItem(item: Item & { verifiedAt?: string }): Item {
  return { ...current, lastVerified: current.lastVerified ?? verifiedAt ?? '', orderStatus: current.orderStatus || 'Needs Order', trackingMode: current.trackingMode || 'quantity', itemType: current.itemType || (current.category === 'Tools' ? 'Tool' : 'Part'), ownership: current.ownership || 'FRC 4418', expectedQuantity: current.expectedQuantity ?? null, slot: current.slot ?? '' };
 }
 export const filterRestock = (items: Item[], areaId = '', state: OrderState | '' = '') => items.filter(item => status(item) !== 'GOOD' && (!areaId || item.areaId === areaId) && (!state || orderStatus(item) === state));
-export interface Database { version: 1; items: Item[]; areas: Area[]; categories: string[]; locations: Location[] }
-export const status = (i: Item) => i.quantity === 0 ? 'OUT' : i.quantity <= i.minimum ? 'LOW' : 'GOOD';
+export interface Database { logistics?:Logistics; version: 1; items: Item[]; areas: Area[]; categories: string[]; locations: Location[] }
+export const status = (i: Item) => (i.totalQuantity??i.quantity) === 0 ? 'OUT' : (i.totalQuantity??i.quantity) <= i.minimum ? 'LOW' : 'GOOD';
 export const needsVerification = (i: Item) => !i.lastVerified || Date.now() - new Date(i.lastVerified).getTime() > 90 * 86400000;
 export const blankItem = (): Item => ({id: createId(), name:'',areaId:'power',category:'',quantity:0,unit:'each',minimum:0,target:0,locationId:'',manufacturer:'',partNumber:'',vendor:'',url:'',cost:0,notes:'',updatedAt:new Date().toISOString(),lastVerified:'',updatedBy:'',orderStatus:'Needs Order',trackingMode:'quantity',itemType:'Part',ownership:'FRC 4418',expectedQuantity:null,slot:''});
 export function demo(): Database {
@@ -76,7 +77,7 @@ export function locationPath(locations: Location[], id: string): string {
  return trail.map(locationLabel).join(' → ');
 }
 export const inLocation = (locations: Location[], itemLocationId: string, parentId: string) => locationTrail(locations,itemLocationId).some(l=>l.id===parentId);
-export const missingTools = (item: Item) => item.itemType==='Tool'&&item.expectedQuantity!==null&&item.quantity<item.expectedQuantity;
+export const missingTools = (item: Item) => item.itemType==='Tool'&&item.expectedQuantity!==null&&item.quantity+(item.assignedElsewhere??0)<item.expectedQuantity;
 export const toolCompleteness = (item: Item) => item.expectedQuantity===null ? 'Not configured' : missingTools(item) ? 'Missing tools' : 'Complete';
 export function verifyDrawer(db: Database, locationId: string, timestamp=new Date().toISOString()): Database {
  if(!db.locations.some(l=>l.id===locationId&&l.kind==='Drawer'))throw new Error('Only drawer locations can be audited.');
