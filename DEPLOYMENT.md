@@ -1,9 +1,10 @@
 # Student testing deployment
 
-Repository: https://github.com/amsoccerman05/amsoccerman05.github.io
+Repository: https://github.com/amsoccerman05/4418-inventory
 Deployment branch: `4418-inventory` (workflow also runs on `main`).
 Production URL: https://inventory.frc4418.org/
-Underlying Pages host: https://amsoccerman05.github.io/
+Pages DNS target: `amsoccerman05.github.io` (unchanged by the repository rename).
+Use the custom production URL for app access and authentication.
 
 ## GitHub configuration
 
@@ -34,7 +35,7 @@ After DNS propagates, wait for GitHub's certificate provisioning and enable **En
 
 ## Supabase — owner setup required
 
-Run all three SQL files in `supabase/migrations` in order, disable public signup, invite the first user and bootstrap its mentor role using the SQL in README. A public key cannot install this schema or manage Auth settings.
+For a fresh project only, run migrations 001–003 in order, disable public signup, invite the first user and bootstrap its mentor role using the SQL in README. The existing production project already has migrations 001–005; do not rerun them. A public key cannot install this schema or manage Auth settings.
 
 Set **Authentication → URL Configuration → Site URL** to:
 
@@ -44,8 +45,6 @@ Add these **Redirect URLs**:
 
 - `https://inventory.frc4418.org/`
 - `https://inventory.frc4418.org/?password-reset=1`
-- `https://amsoccerman05.github.io/`
-- `https://amsoccerman05.github.io/?password-reset=1`
 - `http://localhost:5173/`
 - `http://localhost:5173/?password-reset=1`
 
@@ -59,4 +58,4 @@ No QR codes, serialized assets, checkout, full purchasing workflow, Onshape inte
 
 ## Enable photos, balances and trips
 
-After this frontend upgrade, follow [the owner upgrade guide](supabase/UPGRADE_LOGISTICS.md) to apply migrations 004 and 005. The existing app remains usable until then. No additional GitHub variables, DNS or Auth URL changes are required.
+Migrations 004 and 005 have been applied to production. For another existing V1 workspace, follow [the owner upgrade guide](supabase/UPGRADE_LOGISTICS.md). No additional GitHub variables, DNS or Auth URL changes are required.

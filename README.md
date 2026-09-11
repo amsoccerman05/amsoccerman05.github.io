@@ -26,9 +26,8 @@ The app now supports private item/location photos, multi-location balances, atom
    These settings are embedded in the frontend build. Never use a service-role or secret key. Local environment files are ignored by Git.
 4. Configure **Authentication → URL Configuration**. Set Site URL to your deployed app root, including a trailing slash and repository prefix if applicable. Allow the exact app root and password-reset URL for each environment:
    - `http://localhost:5173/` and `http://localhost:5173/?password-reset=1`
-   - `https://amsoccerman05.github.io/` and `https://amsoccerman05.github.io/?password-reset=1`
    - For a project site: `https://USERNAME.github.io/REPOSITORY/` and the same URL with `?password-reset=1`.
-   - When configured later: `https://inventory.frc4418.org/` and `https://inventory.frc4418.org/?password-reset=1`.
+   - Production: `https://inventory.frc4418.org/` and `https://inventory.frc4418.org/?password-reset=1`.
 
    Invite links use the configured Site URL. The app handles invite/recovery sessions and offers a password form. Password reset requests use the current app origin and base path. PKCE reset links should be opened in the browser that requested the reset.
 5. Invite/create the first mentor. After the Auth user exists, run this owner-only SQL, replacing the email with the actual invited account:
