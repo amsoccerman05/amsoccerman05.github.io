@@ -117,3 +117,5 @@ a:focus-visible, button:focus-visible { outline-color: var(--suite-primary); }
 .danger, .badge.out, .error, .alert, .auth-error { color: var(--suite-danger); }
 .danger.badge, .badge.out, .error, .alert { background: var(--suite-danger-bg); }
 .info, .notice { color: var(--suite-primary); background: var(--suite-info-bg); }
+
+.sidebar{top:76px}.sidebar .nav-label{margin-top:8px}@media(max-width:600px){.sidebar{top:68px}}

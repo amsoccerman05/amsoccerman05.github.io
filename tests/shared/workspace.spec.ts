@@ -3,14 +3,10 @@ import { test,expect,type Page } from '@playwright/test';
 test.beforeEach(async({page})=>{await page.addInitScript(()=>Object.defineProperty(crypto,'randomUUID',{value:undefined,configurable:true}));});
 const drawer='10000000-0000-4000-8000-000000000001';
 const tool='5/32" Allen wrench';
-async function signIn(page:Page,role:string){await page.goto('/');await page.getByLabel('Email',{exact:true}).fill(role+'@example.test');await page.getByLabel('Password',{exact:true}).fill('test-password');await page.getByRole('button',{name:'Sign In',exact:true}).click();await expect(page.getByRole('button',{name:'Inventory',exact:true})).toBeVisible();}
+async function signIn(page:Page,role:string){const response=await page.request.post('http://127.0.0.1:54329/auth/v1/token?grant_type=password',{data:{email:role+'@example.test',password:'test-password'}});const session=await response.json();await page.addInitScript(session=>localStorage.setItem('sb-127-auth-token',JSON.stringify(session)),session);await page.goto('/');if(role!=='inactive')await expect(page.getByRole('button',{name:'Inventory',exact:true})).toBeVisible();}
 
-test('login errors, restoration, protected routes and logout',async({page})=>{
- await page.goto('/#inventory');await expect(page.getByRole('button',{name:'Sign In',exact:true})).toBeVisible();
- await page.getByLabel('Email',{exact:true}).fill('student@example.test');await page.getByLabel('Password',{exact:true}).fill('wrong');await page.getByRole('button',{name:'Sign In',exact:true}).click();await expect(page.getByRole('alert')).toContainText('Invalid login credentials');
- await page.getByLabel('Password',{exact:true}).fill('test-password');await page.getByRole('button',{name:'Sign In',exact:true}).click();await expect(page.getByRole('heading',{name:'Inventory',exact:true})).toBeVisible();
- await page.reload();await expect(page.getByRole('heading',{name:'Inventory',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Sign In',exact:true})).toHaveCount(0);
- await page.getByRole('button',{name:'Sign out',exact:true}).click();await expect(page.getByRole('button',{name:'Sign In',exact:true})).toBeVisible();
+test('canonical gateway, restoration, protected routes and logout',async({page})=>{
+ await page.route('https://team.frc4418.org/',r=>r.fulfill({contentType:'text/html',body:'<h1>Team sign in</h1>'}));await page.goto('/#inventory');await expect(page).toHaveURL('https://team.frc4418.org/');await signIn(page,'student');await page.goto('/#inventory');await expect(page.getByRole('heading',{name:'Inventory',exact:true})).toBeVisible();await page.reload();await expect(page.getByRole('heading',{name:'Inventory',exact:true})).toBeVisible();await page.getByRole('button',{name:'Sign out',exact:true}).click();await expect(page).toHaveURL('https://team.frc4418.org/');
 });
 
 test('student phone change is attributed and reaches a second device via realtime',async({page,browser})=>{
@@ -62,10 +58,7 @@ await page.getByRole('button',{name:'Preview local data',exact:true}).click();aw
  await page.goto('/#inventory');await page.getByLabel('Search inventory').fill('Local migration wrench');await expect(page.locator('tbody tr')).toHaveCount(1);await expect(page.locator('tbody')).toContainText('TA-99');
 });
 
-test('inactive account is blocked and password reset has no signup flow',async({page})=>{
- await page.goto('/');await expect(page.getByRole('button',{name:/sign up/i})).toHaveCount(0);await page.getByLabel('Email',{exact:true}).fill('student@example.test');await page.getByRole('button',{name:'Forgot password?',exact:true}).click();await expect(page.getByRole('status')).toContainText('password reset email');
- await page.getByLabel('Email',{exact:true}).fill('inactive@example.test');await page.getByLabel('Password',{exact:true}).fill('test-password');await page.getByRole('button',{name:'Sign In',exact:true}).click();await expect(page.getByRole('alert')).toContainText('inactive');
-});
+test('inactive account stays protected without a separate login',async({page})=>{await signIn(page,'inactive');await expect(page.getByRole('alert')).toContainText('inactive');await expect(page.getByRole('button',{name:'Sign out',exact:true})).toBeVisible();await expect(page.locator('.auth-form')).toHaveCount(0);});
 
 for(const width of [390,1440])test(`mentor keeps Inventory administration and follows Hub for team management ${width}`,async({page})=>{
  await page.setViewportSize({width,height:900});
@@ -84,9 +77,10 @@ for(const width of [390,1440])test(`mentor keeps Inventory administration and fo
 
 
 test('dashboard invitation callback accepts the token fragment and sets a password',async({page,request})=>{
+ await page.route('https://team.frc4418.org/',r=>r.fulfill({contentType:'text/html',body:'<h1>My 4418</h1>'}));
  const response=await request.post('http://127.0.0.1:54329/auth/v1/token?grant_type=password',{data:{email:'readonly@example.test',password:'test-password'}});const session=await response.json();
  const fragment=new URLSearchParams({access_token:session.access_token,refresh_token:session.refresh_token,expires_in:'3600',token_type:'bearer',type:'invite'});
  await page.goto('/#'+fragment.toString());await expect(page.getByRole('heading',{name:'Set your password',exact:true})).toBeVisible();
  await page.getByLabel('New password',{exact:true}).fill('new-test-password');await page.getByLabel('Confirm password',{exact:true}).fill('new-test-password');await page.getByRole('button',{name:'Save password',exact:true}).click();
- await expect(page.getByRole('heading',{name:'Everything in its place.',exact:true})).toBeVisible();await expect(page).toHaveURL(/#dashboard$/);expect(page.url()).not.toContain('access_token');
+ await expect(page).toHaveURL('https://team.frc4418.org/');expect(page.url()).not.toContain('access_token');
 });

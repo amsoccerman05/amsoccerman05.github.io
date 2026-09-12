@@ -1,3 +1,4 @@
+import {AuthSurface} from '../AuthSurface';
 import {SuiteHeader} from '../SuiteHeader';
 import { useEffect,useState,type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
@@ -19,26 +20,15 @@ export function AuthGate({children}:{children:(profile:UserProfile,signOut:()=>P
   return()=>{active=false;};
  },[session?.user.id]);
  const signOut=async()=>{if(!supabase)return;const {error}=await supabase.auth.signOut({scope:'local'});if(error)throw error;setSession(null);setProfile(null);setRecovery(false);};
- if(demoMode)return children(demoProfile,async()=>{},()=>{});
- if(loading)return <AuthFrame account={session?<button onClick={()=>void signOut().catch(e=>setError(friendlyError(e)))}>Sign out</button>:null}><p role="status">Restoring your session…</p></AuthFrame>;
- if(configurationError)return <AuthFrame><p role="alert">{configurationError}</p></AuthFrame>;
- if(recovery&&session)return <PasswordForm signOut={signOut} done={()=>{setRecovery(false);history.replaceState(null,'',authRedirectUrl()+'#dashboard');}}/>;
- if(!session)return <Login error={error}/>;
- if(!profile||!profile.active)return <AuthFrame account={<button className="text-button" onClick={()=>void signOut().catch(e=>setError(friendlyError(e)))}>Sign out</button>}><p role="alert">{profile?'Your account is inactive. Ask a mentor to restore access.':error}</p><button className="secondary" onClick={()=>location.reload()}>Retry</button></AuthFrame>;
+ if(demoMode&&import.meta.env.DEV)return children(demoProfile,async()=>{},()=>{});
+ if(loading)return session?<><SuiteHeader app="Inventory" name={profile?.displayName} onSignOut={()=>void signOut().catch(e=>setError(friendlyError(e)))}/><p role="status">Loading…</p></>:<AuthSurface/>;
+ if(configurationError||!supabase)return <AuthSurface><p role="alert">Unable to connect securely. Please try again.</p><a href="https://team.frc4418.org/">Team sign in</a></AuthSurface>;
+ if(recovery&&session)return <PasswordForm signOut={signOut} done={()=>location.replace('https://team.frc4418.org/')}/>;
+ if(!session)return <AuthSurface redirect/>;
+ if(!profile||!profile.active)return <><SuiteHeader app="Inventory" name={profile?.displayName} onSignOut={()=>void signOut().catch(e=>setError(friendlyError(e)))}/><section className="auth-card"><p role="alert">{profile?'Your account is inactive. Ask a mentor to restore access.':error}</p><button className="secondary" onClick={()=>location.reload()}>Retry</button></section></>;
  return children(profile,signOut,setProfile);
 }
-function AuthFrame({children,account}:{children:ReactNode;account?:ReactNode}){return <><SuiteHeader app="Inventory" account={account}/><div className="auth-page"><section className="panel auth-card"><div className="brand auth-brand"><span className="brand-mark official-brand"><img src={logo} alt="Team 4418 IMPULSE rocket logo"/></span><div>4418<span>TEAM INVENTORY</span></div></div><h1>4418 Inventory</h1><p className="auth-intro">One team. Every part.</p>{children}</section></div></>;}
-function Login({error:initialError}:{error:string}){
- const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[error,setError]=useState(initialError),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
- return <AuthFrame><form className="auth-form" onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');try{const {error}=await supabase!.auth.signInWithPassword({email:email.trim(),password});if(error)throw error;}catch(e){setError(friendlyError(e));}finally{setBusy(false);}}}>
- <label>Email<input type="email" autoComplete="username" required value={email} onChange={e=>setEmail(e.target.value)}/></label>
- <label>Password<input type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)}/></label>
- {error&&<p className="auth-error" role="alert">{error}</p>}{message&&<p role="status">{message}</p>}
- <button className="primary" disabled={busy}>{busy?'Signing in…':'Sign In'}</button>
- <button className="text-button" disabled={busy} type="button" onClick={async()=>{if(!email.trim()){setError('Enter your email address first.');return;}setBusy(true);setError('');try{const {error}=await supabase!.auth.resetPasswordForEmail(email.trim(),{redirectTo:authRedirectUrl()+'?password-reset=1'});if(error)throw error;setMessage('If an account exists, a password reset email is on its way.');}catch(e){setError(friendlyError(e));}finally{setBusy(false);}}}>Forgot password?</button>
- <small>Accounts are provided by your team’s mentors. Contact a mentor for an invitation.</small>
- </form></AuthFrame>;
-}
+function AuthFrame({children,account}:{children:ReactNode;account?:ReactNode}){return <AuthSurface>{children}{account}</AuthSurface>;}
 function PasswordForm({done,signOut}:{done:()=>void;signOut:()=>Promise<void>}){
  const [password,setPassword]=useState(''),[confirm,setConfirm]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
  return <AuthFrame account={<button onClick={()=>void signOut().catch(e=>setError(friendlyError(e)))}>Sign out</button>}><form className="auth-form" onSubmit={async e=>{e.preventDefault();if(password!==confirm){setError('Passwords must match.');return;}setBusy(true);const {error}=await supabase!.auth.updateUser({password});if(error)setError(friendlyError(error));else done();setBusy(false);}}><h2>Set your password</h2><label>New password<input type="password" autoComplete="new-password" minLength={12} required value={password} onChange={e=>setPassword(e.target.value)}/></label><label>Confirm password<input type="password" autoComplete="new-password" minLength={12} required value={confirm} onChange={e=>setConfirm(e.target.value)}/></label>{error&&<p role="alert">{error}</p>}<button className="primary" disabled={busy}>Save password</button></form></AuthFrame>;

@@ -122,7 +122,7 @@ test('mobile audit and local official branding render correctly',async({page})=>
  await expect(page.locator('.quantity-toast')).toContainText('4 each');
  await page.screenshot({path:'test-results/drawer-mobile.png',fullPage:true});
  await page.getByRole('button',{name:'Toggle navigation'}).click();
- const logo=page.getByAltText('Team 4418 IMPULSE rocket logo');
+ const logo=page.locator('.suite-brand img');
  await expect(logo).toBeVisible();
  expect(await logo.evaluate((img:HTMLImageElement)=>img.complete&&img.naturalWidth>0)).toBe(true);
  expect(await logo.getAttribute('src')).toContain('branding/4418-impulse-emblem.png');
@@ -142,7 +142,7 @@ test('production assets and direct drawer links work at the custom domain root',
  await page.goto('/#location/ta-01');
  await page.reload();
  await expect(page.getByRole('heading',{name:'TA-01 — SAE Hex Keys',exact:true})).toBeVisible();
- const logo=page.getByAltText('Team 4418 IMPULSE rocket logo');
+ const logo=page.locator('.suite-brand img');
  expect(await logo.evaluate((img:HTMLImageElement)=>img.complete&&img.naturalWidth>0&&new URL(img.src).pathname.startsWith('/branding/'))).toBe(true);
  await page.getByRole('button',{name:'Add one 5/32" Allen wrench',exact:true}).click();
  await expect(page.locator('.quantity-toast')).toContainText('4 each');
