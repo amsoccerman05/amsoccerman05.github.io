@@ -1,3 +1,4 @@
+import {SuiteHeader} from '../SuiteHeader';
 import { useEffect,useState,type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase,demoMode,configurationError,authRedirectUrl,friendlyError,passwordFlow } from './supabase';
@@ -19,14 +20,14 @@ export function AuthGate({children}:{children:(profile:UserProfile,signOut:()=>P
  },[session?.user.id]);
  const signOut=async()=>{if(!supabase)return;const {error}=await supabase.auth.signOut({scope:'local'});if(error)throw error;setSession(null);setProfile(null);setRecovery(false);};
  if(demoMode)return children(demoProfile,async()=>{},()=>{});
- if(loading)return <AuthFrame><p role="status">Restoring your session…</p></AuthFrame>;
+ if(loading)return <AuthFrame account={session?<button onClick={()=>void signOut().catch(e=>setError(friendlyError(e)))}>Sign out</button>:null}><p role="status">Restoring your session…</p></AuthFrame>;
  if(configurationError)return <AuthFrame><p role="alert">{configurationError}</p></AuthFrame>;
- if(recovery&&session)return <PasswordForm done={()=>{setRecovery(false);history.replaceState(null,'',authRedirectUrl()+'#dashboard');}}/>;
+ if(recovery&&session)return <PasswordForm signOut={signOut} done={()=>{setRecovery(false);history.replaceState(null,'',authRedirectUrl()+'#dashboard');}}/>;
  if(!session)return <Login error={error}/>;
- if(!profile||!profile.active)return <AuthFrame><p role="alert">{profile?'Your account is inactive. Ask a mentor to restore access.':error}</p><button className="secondary" onClick={()=>location.reload()}>Retry</button><button className="text-button" onClick={()=>void signOut().catch(e=>setError(friendlyError(e)))}>Sign out</button></AuthFrame>;
+ if(!profile||!profile.active)return <AuthFrame account={<button className="text-button" onClick={()=>void signOut().catch(e=>setError(friendlyError(e)))}>Sign out</button>}><p role="alert">{profile?'Your account is inactive. Ask a mentor to restore access.':error}</p><button className="secondary" onClick={()=>location.reload()}>Retry</button></AuthFrame>;
  return children(profile,signOut,setProfile);
 }
-function AuthFrame({children}:{children:ReactNode}){return <div className="auth-page"><section className="panel auth-card"><div className="brand auth-brand"><span className="brand-mark official-brand"><img src={logo} alt="Team 4418 IMPULSE rocket logo"/></span><div>4418<span>TEAM INVENTORY</span></div></div><a className="text-button" href="https://team.frc4418.org/">Team Hub / Home</a><h1>4418 Inventory</h1><p className="auth-intro">One team. Every part.</p>{children}</section></div>;}
+function AuthFrame({children,account}:{children:ReactNode;account?:ReactNode}){return <><SuiteHeader app="Inventory" account={account}/><div className="auth-page"><section className="panel auth-card"><div className="brand auth-brand"><span className="brand-mark official-brand"><img src={logo} alt="Team 4418 IMPULSE rocket logo"/></span><div>4418<span>TEAM INVENTORY</span></div></div><h1>4418 Inventory</h1><p className="auth-intro">One team. Every part.</p>{children}</section></div></>;}
 function Login({error:initialError}:{error:string}){
  const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[error,setError]=useState(initialError),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
  return <AuthFrame><form className="auth-form" onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');try{const {error}=await supabase!.auth.signInWithPassword({email:email.trim(),password});if(error)throw error;}catch(e){setError(friendlyError(e));}finally{setBusy(false);}}}>
@@ -38,7 +39,7 @@ function Login({error:initialError}:{error:string}){
  <small>Accounts are provided by your team’s mentors. Contact a mentor for an invitation.</small>
  </form></AuthFrame>;
 }
-function PasswordForm({done}:{done:()=>void}){
+function PasswordForm({done,signOut}:{done:()=>void;signOut:()=>Promise<void>}){
  const [password,setPassword]=useState(''),[confirm,setConfirm]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
- return <AuthFrame><form className="auth-form" onSubmit={async e=>{e.preventDefault();if(password!==confirm){setError('Passwords must match.');return;}setBusy(true);const {error}=await supabase!.auth.updateUser({password});if(error)setError(friendlyError(error));else done();setBusy(false);}}><h2>Set your password</h2><label>New password<input type="password" autoComplete="new-password" minLength={12} required value={password} onChange={e=>setPassword(e.target.value)}/></label><label>Confirm password<input type="password" autoComplete="new-password" minLength={12} required value={confirm} onChange={e=>setConfirm(e.target.value)}/></label>{error&&<p role="alert">{error}</p>}<button className="primary" disabled={busy}>Save password</button></form></AuthFrame>;
+ return <AuthFrame account={<button onClick={()=>void signOut().catch(e=>setError(friendlyError(e)))}>Sign out</button>}><form className="auth-form" onSubmit={async e=>{e.preventDefault();if(password!==confirm){setError('Passwords must match.');return;}setBusy(true);const {error}=await supabase!.auth.updateUser({password});if(error)setError(friendlyError(error));else done();setBusy(false);}}><h2>Set your password</h2><label>New password<input type="password" autoComplete="new-password" minLength={12} required value={password} onChange={e=>setPassword(e.target.value)}/></label><label>Confirm password<input type="password" autoComplete="new-password" minLength={12} required value={confirm} onChange={e=>setConfirm(e.target.value)}/></label>{error&&<p role="alert">{error}</p>}<button className="primary" disabled={busy}>Save password</button></form></AuthFrame>;
 }
