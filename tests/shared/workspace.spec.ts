@@ -55,7 +55,8 @@ test('failed quantity RPC leaves saved count unchanged',async({page})=>{
 
 test('mentor can migrate local IDs transactionally and repeating migration is idempotent',async({page})=>{
  await page.addInitScript(()=>{localStorage.setItem('frc-4418-inventory-v1',JSON.stringify({version:1,areas:[{id:'fabrication',name:'Fabrication',lead:'Local lead'}],locations:[{id:'local-drawer',name:'TA-99',bin:'TA-99',kind:'Drawer',room:'Robotics Lab',storage:'Toolbox A',parentId:null}],categories:['Tools'],items:[{id:'legacy-tool',name:'Local migration wrench',areaId:'fabrication',category:'Tools',quantity:2,unit:'each',minimum:1,target:4,expectedQuantity:3,locationId:'local-drawer',slot:'L1',manufacturer:'',partNumber:'',vendor:'',url:'',cost:0,notes:'Migration test',updatedAt:'2026-01-01T00:00:00Z',lastVerified:'',updatedBy:'Former student',itemType:'Tool',ownership:'Shared / School',orderStatus:'Needs Order',trackingMode:'quantity'}]}));});
- await signIn(page,'mentor');await page.goto('/#admin');await page.getByRole('button',{name:'Preview local data',exact:true}).click();await expect(page.getByText('1 inventory items · 1 locations · 1 areas')).toBeVisible();
+ await signIn(page,'mentor');await page.goto('/#admin');
+await page.getByRole('button',{name:'Preview local data',exact:true}).click();await expect(page.getByText('1 inventory items · 1 locations · 1 areas')).toBeVisible();
  page.on('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'Confirm migration',exact:true}).click();await expect(page.getByText('Migration complete. Local V0 data has been kept as a backup.')).toBeVisible();
  await page.getByRole('button',{name:'Preview local data',exact:true}).click();await page.getByRole('button',{name:'Confirm migration',exact:true}).click();await expect(page.getByText('Migration complete. Local V0 data has been kept as a backup.')).toBeVisible();
  await page.goto('/#inventory');await page.getByLabel('Search inventory').fill('Local migration wrench');await expect(page.locator('tbody tr')).toHaveCount(1);await expect(page.locator('tbody')).toContainText('TA-99');
@@ -69,6 +70,7 @@ test('inactive account is blocked and password reset has no signup flow',async({
 for(const width of [390,1440])test(`mentor keeps Inventory administration and follows Hub for team management ${width}`,async({page})=>{
  await page.setViewportSize({width,height:900});
  await signIn(page,'mentor');await page.goto('/#admin');
+ await page.locator('.suite-picker summary').click();await expect(page.locator('.suite-picker nav a')).toHaveCount(5);await expect(page.locator('.suite-picker nav')).toContainText('Finance');await page.screenshot({path:`test-results/suite-menu-${width}.png`});await page.keyboard.press('Escape');await expect(page.locator('.suite-picker nav')).toBeHidden();
  await page.getByRole('button',{name:'Add toolbox demo',exact:true}).click();await expect(page.getByText('Toolbox demo added. Existing items were preserved.')).toBeVisible();
  await page.getByRole('button',{name:'Dismiss notification'}).click();
  await page.getByRole('button',{name:'Add toolbox demo',exact:true}).click();await expect(page.getByText('Toolbox demo added. Existing items were preserved.')).toBeVisible();
