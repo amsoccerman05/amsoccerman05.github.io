@@ -17,7 +17,6 @@ export interface InventoryRepository {
  verifyDrawer(db:Database,id:string):Promise<void>;
  subscribe(onChange:()=>void,onStatus:(message:string)=>void):()=>void;
  profiles():Promise<UserProfile[]>;
- saveProfile(profile:UserProfile):Promise<void>;
  history(itemId?:string,areaId?:string):Promise<InventoryEvent[]>;
  importData(source:Database,current:Database):Promise<void>;
 }

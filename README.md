@@ -38,7 +38,7 @@ The app now supports private item/location photos, multi-location balances, atom
    where id = (select id from auth.users where email = 'YOUR_EMAIL');
    ```
 
-   Sign in and use **Admin → Users** to manage existing profiles: display name, role, primary area and active status. Invitations remain in the Supabase dashboard. The last active admin/mentor cannot be disabled or demoted through the application.
+   After the reviewed Hub Team Management rollout, use **Team Hub → Team Management** to manage existing profiles, roles, areas, registration and positions. Inventory Admin links there. Invitations remain in the Supabase dashboard. The last active admin/mentor cannot be disabled or demoted through the application.
 6. With Node.js 22+ installed, run `npm ci` and `npm run dev`. Restart Vite after changing environment values. Run `npm run build` to type-check and create `dist/`; `npm run preview` serves that production build.
 7. For GitHub Pages, add repository Actions variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (the latter may alternatively be an Actions secret). Select **Settings → Pages → GitHub Actions**. The included workflow builds and publishes on pushes to `main` or manual dispatch. Configure these variables before deployment; the deployment workflow fails if either is missing, preventing an accidental public demo deployment.
 
@@ -61,7 +61,7 @@ The database contains `profiles`, `areas`, `locations`, `categories`, `inventory
 | readonly | View, search and filter all team inventory, locations and restock. No writes or audits. |
 | student | Readonly access plus quantity corrections, item verification and drawer audits. |
 | lead | Student access plus item metadata and minimum/expected/target changes in their assigned area. Can view all areas; initial Inventory and Restock filters use their assigned area. |
-| admin / mentor | Full inventory and configuration access, CSV, migration, explicit demo seed and management of existing user profiles. Mentor remains a distinct role. |
+| admin / mentor | Full inventory and configuration access, CSV, migration, explicit demo seed; shared member administration is in Team Hub. Mentor remains a distinct role. |
 
 All public application tables have RLS enabled and anonymous table access revoked. Policies derive roles and area assignments from the active database profile through narrowly scoped helpers in a private schema. Inventory triggers additionally guard columns, because row policies alone cannot distinguish a student's quantity edit from a metadata edit. Moving an item across areas requires permission for both its old and new area. Browser-supplied actor IDs and privileged signup metadata are never trusted. Events are written by database triggers in the same transaction as inventory changes; clients cannot insert, modify or delete history.
 
@@ -146,3 +146,7 @@ The official white IMPULSE rocket and wordmark from [frc4418.org](https://www.fr
 Possible duplicates are flagged in the item form, inventory rows, and drawer audit when normalized names, item types, ownership, and exact locations match. Capitalization, whitespace, and inch quote styles are normalized. Entries in different drawers or with different ownership remain separate; the warning does not block legitimate separate records or automatically combine counts.
 
 Audit rows show **Target (overall)** separately from **Current / Expected**. Drawers with at least 15 items keep their summary and verification action visible while scrolling and provide **Next missing**, which focuses the next incomplete tool count without hiding any rows. The timed automated check measures UI navigation/correction/verification, not the time a student needs to physically count tools.
+
+### Pending Team Management rollout
+
+This local version removes Inventory's profile editor/write repository method. Review Hub's additive `202609120003_team_management_positions.sql` and deploy its Team Management route before publishing Inventory's redirect. Existing Inventory profile reads, assigned-area permissions, stock operations and data stay unchanged. No production migration or deployment was performed for this pass.

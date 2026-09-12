@@ -45,7 +45,6 @@ export class LocalStorageInventoryRepository implements InventoryRepository {
  async deletePhoto(){throw new Error('Photo uploads require the shared Supabase workspace.');}
  subscribe(){return ()=>{};}
  async profiles(){return [demoProfile];}
- async saveProfile(){throw new Error('User management is available in the shared workspace.');}
  async history(itemId?:string,areaId?:string){return ((local.load() as LocalWithHistory).events??[]).filter(e=>(!itemId||e.itemId===itemId)&&(!areaId||e.areaId===areaId)).reverse().slice(0,30);}
  async importData(source:Database,current:Database){await this.apply(current,source);}
 }
@@ -106,7 +105,6 @@ export class SupabaseInventoryRepository implements InventoryRepository {
  }
  async deletePhoto(photo:Media){const {data,error}=await this.client().from('inventory_media').delete().eq('id',photo.id).eq('updated_at',photo.updatedAt).select('id');if(error)throw error;if(!data?.length)throw new Error('Photo changed. Refresh first.');const removed=await this.client().storage.from('inventory-media').remove([photo.path]);if(removed.error)throw new Error('Photo reference removed, but Storage cleanup failed. Ask a mentor to remove the old file.');}
  async profiles(){return (await this.rows('profiles')).map(profileFromRow);}
- async saveProfile(p:UserProfile){const {data,error}=await this.client().from('profiles').update({display_name:p.displayName,role:p.role,primary_area_id:p.primaryAreaId,active:p.active}).eq('id',p.id).eq('updated_at',p.updatedAt!).select('id');if(error)throw error;if(!data.length)throw new Error('Profile changed or access was denied. Refresh and try again.');}
  async history(itemId?:string,areaId?:string){let query=this.client().from('inventory_events').select('*').order('created_at',{ascending:false}).limit(30);if(itemId)query=query.eq('inventory_item_id',itemId);if(areaId)query=query.eq('area_id',areaId);const {data,error}=await query;if(error)throw error;return (data as Row[]).map(eventFromRow);}
  async importData(source:Database,current:Database){await this.apply(current,await migrationData(source,current));}
 }

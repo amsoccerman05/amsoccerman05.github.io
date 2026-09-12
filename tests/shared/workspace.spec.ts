@@ -66,13 +66,16 @@ test('inactive account is blocked and password reset has no signup flow',async({
  await page.getByLabel('Email',{exact:true}).fill('inactive@example.test');await page.getByLabel('Password',{exact:true}).fill('test-password');await page.getByRole('button',{name:'Sign In',exact:true}).click();await expect(page.getByRole('alert')).toContainText('inactive');
 });
 
-test('mentor can seed toolbox examples repeatedly and update an existing profile',async({page})=>{
+for(const width of [390,1440])test(`mentor keeps Inventory administration and follows Hub for team management ${width}`,async({page})=>{
+ await page.setViewportSize({width,height:900});
  await signIn(page,'mentor');await page.goto('/#admin');
  await page.getByRole('button',{name:'Add toolbox demo',exact:true}).click();await expect(page.getByText('Toolbox demo added. Existing items were preserved.')).toBeVisible();
  await page.getByRole('button',{name:'Dismiss notification'}).click();
  await page.getByRole('button',{name:'Add toolbox demo',exact:true}).click();await expect(page.getByText('Toolbox demo added. Existing items were preserved.')).toBeVisible();
- const profile=page.locator('.profile-form').filter({hasText:'readonly@example.test'});await profile.getByLabel('Display name').fill('Read Only Teammate');await profile.getByRole('button',{name:'Save profile',exact:true}).click();
- await page.reload();await expect(page.locator('.profile-form').filter({hasText:'readonly@example.test'}).getByLabel('Display name')).toHaveValue('Read Only Teammate');
+ await expect(page.getByRole('link',{name:'Open Team Management →'})).toHaveAttribute('href','https://team.frc4418.org/#team-management');
+ await expect(page.locator('.profile-form')).toHaveCount(0);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.screenshot({path:`test-results/team-management-link-${width}.png`,fullPage:true});
  await page.goto('/#inventory');await page.getByLabel('Search inventory').fill('5/64');await expect(page.locator('tbody tr')).toHaveCount(1);
  await page.getByRole('button',{name:'5/64" Allen wrench',exact:true}).click();await expect(page.getByRole('combobox',{name:/^Owner area/})).toHaveValue('44180000-0000-4000-8000-000000000001');
 });
